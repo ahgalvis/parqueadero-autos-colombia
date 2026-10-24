@@ -25,40 +25,61 @@ bd/autos_colombia.sql   Script del modelo físico con datos de prueba
 tests/                  Pruebas automáticas del flujo completo
 ```
 
-## Instalación
+## Instalación (Windows, PowerShell)
 
-1. Instala [Python](https://www.python.org/downloads/) y [MySQL](https://dev.mysql.com/downloads/installer/) (o XAMPP).
-2. Clona el repositorio y crea un entorno virtual:
+Ejecuta los comandos **uno por uno** en PowerShell.
 
-   ```bash
+1. Instala [Git](https://git-scm.com/download/win), [Python](https://www.python.org/downloads/) (marca "Add python.exe to PATH") y [MySQL](https://dev.mysql.com/downloads/installer/). Cierra y vuelve a abrir PowerShell después de instalarlos.
+2. Clona el repositorio y crea el entorno virtual:
+
+   ```powershell
+   cd Documents
    git clone https://github.com/ahgalvis/parqueadero-autos-colombia.git
    cd parqueadero-autos-colombia
    python -m venv venv
-   venv\Scripts\activate        # Windows
-   source venv/bin/activate     # macOS / Linux
+   Set-ExecutionPolicy -Scope CurrentUser RemoteSigned   # solo la primera vez
+   venv\Scripts\activate
    pip install -r requirements.txt
    ```
 
-3. Crea la base de datos ejecutando `bd/autos_colombia.sql` en MySQL Workbench, o desde la terminal:
+   Al activar debe aparecer `(venv)` al inicio de la línea.
 
-   ```bash
-   mysql -u root -p < bd/autos_colombia.sql
+3. Crea la base de datos. Entra a MySQL (te pide la contraseña de root):
+
+   ```powershell
+   mysql -u root -p
    ```
 
-4. Configura la conexión si tu usuario o contraseña de MySQL no son `root` sin contraseña:
+   Si `mysql` no se reconoce, abre "MySQL 8.0 Command Line Client" desde el menú Inicio. Ya dentro (verás `mysql>`), carga el script usando barras `/` y sal:
 
-   ```bash
-   set DB_PASSWORD=tu_clave        # Windows (cmd)
-   export DB_PASSWORD=tu_clave     # macOS / Linux
+   ```sql
+   SOURCE C:/Users/TU_USUARIO/Documents/parqueadero-autos-colombia/bd/autos_colombia.sql;
+   SHOW TABLES FROM autos_colombia;
+   exit
    ```
+
+   También puedes abrir `bd/autos_colombia.sql` en MySQL Workbench y ejecutarlo con el rayo.
+
+4. Indica tu contraseña de MySQL (se debe repetir cada vez que abras PowerShell) y ejecuta la aplicación:
+
+   ```powershell
+   $env:DB_PASSWORD="tu_clave_de_mysql"
+   python run.py
+   ```
+
+   Abre http://127.0.0.1:5000
 
    Variables disponibles: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `SECRET_KEY`.
 
-5. Ejecuta la aplicación y abre http://127.0.0.1:5000
+### macOS / Linux
 
-   ```bash
-   python run.py
-   ```
+```bash
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+mysql -u root -p < bd/autos_colombia.sql
+export DB_PASSWORD=tu_clave_de_mysql
+python run.py
+```
 
 ## Usuarios de prueba
 
