@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block titulo %}Panel{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-4">Estado de celdas</h1>
+<div class="row g-3">
+  {% for tipo, conteo in celdas.items() %}
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h5">{{ 'Carros' if tipo == 'CARRO' else 'Motos' }}</h2>
+        <p class="display-6 mb-0"><span class="text-success">{{ conteo.LIBRE }}</span> libres ·
+          <span class="text-danger">{{ conteo.OCUPADA }}</span> ocupadas</p>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+<div class="mt-4">
+  <a class="btn btn-success btn-lg me-2" href="{{ url_for('movimientos.entrada') }}">Registrar entrada</a>
+  <a class="btn btn-danger btn-lg" href="{{ url_for('movimientos.salida') }}">Registrar salida</a>
+</div>
+{% endblock %}

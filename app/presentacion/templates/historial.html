@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block titulo %}Historial{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-3">Historial de movimientos</h1>
+<form class="row g-2 mb-3">
+  <div class="col-auto"><input class="form-control text-uppercase" name="placa" value="{{ filtros.placa }}" placeholder="Placa"></div>
+  <div class="col-auto"><input class="form-control" type="date" name="desde" value="{{ filtros.desde }}"></div>
+  <div class="col-auto"><input class="form-control" type="date" name="hasta" value="{{ filtros.hasta }}"></div>
+  <div class="col-auto"><button class="btn btn-outline-primary">Filtrar</button></div>
+</form>
+{% if movimientos %}
+<table class="table table-striped bg-white">
+  <thead><tr><th>Placa</th><th>Celda</th><th>Entrada</th><th>Operador</th><th>Salida</th><th>Operador</th><th>Novedades</th></tr></thead>
+  <tbody>
+  {% for m in movimientos %}
+  <tr><td>{{ m.placa }}</td><td>{{ m.celda }}</td>
+      <td>{{ m.fecha_hora_entrada.strftime('%d/%m/%Y %H:%M') }}</td><td>{{ m.operador_entrada }}</td>
+      <td>{{ m.fecha_hora_salida.strftime('%d/%m/%Y %H:%M') if m.fecha_hora_salida else 'En el parqueadero' }}</td>
+      <td>{{ m.operador_salida or '' }}</td><td>{{ m.novedades }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="text-muted">No se encontraron movimientos.</p>
+{% endif %}
+{% endblock %}

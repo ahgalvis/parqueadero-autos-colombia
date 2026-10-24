@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block titulo %}Registrar entrada{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-3">Registrar entrada</h1>
+{% with texto_boton="Validar" %}{% include "_placa.html" %}{% endwith %}
+{% if datos %}
+<div class="card mb-4">
+  <div class="card-body">
+    <dl class="row">
+      <dt class="col-sm-3">Placa</dt><dd class="col-sm-9">{{ datos.vehiculo.placa }} ({{ datos.vehiculo.tipo.value|lower }})</dd>
+      <dt class="col-sm-3">Vehículo</dt><dd class="col-sm-9">{{ datos.vehiculo.marca }} {{ datos.vehiculo.color }}</dd>
+      <dt class="col-sm-3">Propietario</dt><dd class="col-sm-9">{{ datos.propietario }}</dd>
+      <dt class="col-sm-3">Mensualidad</dt><dd class="col-sm-9 text-success">Vigente hasta {{ datos.mensualidad.fecha_fin.strftime('%d/%m/%Y') }}</dd>
+      <dt class="col-sm-3">Celdas libres</dt><dd class="col-sm-9">{{ datos.celdas_libres }}</dd>
+    </dl>
+    <form method="post">
+      <input type="hidden" name="placa" value="{{ datos.vehiculo.placa }}">
+      <button class="btn btn-success" name="accion" value="confirmar">Confirmar entrada</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% if comprobante %}{% with c=comprobante %}{% include "_comprobante.html" %}{% endwith %}{% endif %}
+{% endblock %}

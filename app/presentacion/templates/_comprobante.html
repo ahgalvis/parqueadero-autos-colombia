@@ -1,0 +1,15 @@
+<div class="card border-success mb-4">
+  <div class="card-header bg-success text-white">Comprobante</div>
+  <div class="card-body">
+    <dl class="row mb-0">
+      <dt class="col-sm-3">Placa</dt><dd class="col-sm-9">{{ c.placa }} ({{ c.tipo|lower }})</dd>
+      <dt class="col-sm-3">Propietario</dt><dd class="col-sm-9">{{ c.propietario }}</dd>
+      <dt class="col-sm-3">Celda</dt><dd class="col-sm-9">{{ c.celda }}</dd>
+      <dt class="col-sm-3">Entrada</dt><dd class="col-sm-9">{{ c.entrada.strftime('%d/%m/%Y %H:%M') }}</dd>
+      {% if c.salida %}
+      <dt class="col-sm-3">Salida</dt><dd class="col-sm-9">{{ c.salida.strftime('%d/%m/%Y %H:%M') }}</dd>
+      <dt class="col-sm-3">Permanencia</dt><dd class="col-sm-9">{{ c.permanencia }}</dd>
+      {% endif %}
+    </dl>
+  </div>
+</div>

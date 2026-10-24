@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block titulo %}Vehículos en el parqueadero{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-3">Vehículos en el parqueadero</h1>
+<form class="row g-2 mb-3">
+  <div class="col-auto"><input class="form-control text-uppercase" name="placa" value="{{ placa }}" placeholder="Buscar placa"></div>
+  <div class="col-auto"><button class="btn btn-outline-primary">Buscar</button></div>
+</form>
+{% if vehiculos %}
+<table class="table table-striped bg-white">
+  <thead><tr><th>Placa</th><th>Tipo</th><th>Propietario</th><th>Celda</th><th>Entrada</th><th></th></tr></thead>
+  <tbody>
+  {% for v in vehiculos %}
+  <tr><td>{{ v.placa }}</td><td>{{ v.tipo|lower }}</td><td>{{ v.propietario }}</td><td>{{ v.celda }}</td>
+      <td>{{ v.fecha_hora_entrada.strftime('%d/%m/%Y %H:%M') }}</td>
+      <td><a href="{{ url_for('movimientos.novedad', placa=v.placa) }}">Novedad</a></td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="text-muted">No hay vehículos en el parqueadero.</p>
+{% endif %}
+{% endblock %}

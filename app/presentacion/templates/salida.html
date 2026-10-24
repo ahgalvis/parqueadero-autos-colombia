@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block titulo %}Registrar salida{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-3">Registrar salida</h1>
+{% with texto_boton="Buscar" %}{% include "_placa.html" %}{% endwith %}
+{% if datos %}
+{% with c=datos %}{% include "_comprobante.html" %}{% endwith %}
+{% if datos.novedades %}
+<div class="alert alert-warning">
+  <strong>Novedades de esta estancia:</strong>
+  <ul class="mb-0">
+    {% for n in datos.novedades %}
+    <li>{{ n.fecha_hora.strftime('%d/%m %H:%M') }} · {{ n.descripcion }} ({{ n.operador }})</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+<form method="post" class="mb-4">
+  <input type="hidden" name="placa" value="{{ datos.placa }}">
+  <button class="btn btn-danger" name="accion" value="confirmar">Confirmar salida</button>
+</form>
+{% endif %}
+{% if comprobante %}{% with c=comprobante %}{% include "_comprobante.html" %}{% endwith %}{% endif %}
+{% endblock %}
