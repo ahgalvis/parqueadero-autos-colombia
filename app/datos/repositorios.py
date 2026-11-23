@@ -3,7 +3,7 @@ from werkzeug.security import generate_password_hash
 
 from app.datos import conexion
 from app.modelo.entidades import (
-    Celda, EstadoCelda, Mensualidad, Novedad, Operador, Registro, Rol, TipoVehiculo, Vehiculo,
+    Celda, EstadoCelda, Mensualidad, Novedad, Operador, Registro, Rol, TipoVehiculo, Usuario, Vehiculo,
 )
 
 CLAVES_INICIALES = {"admin": "admin123", "operador": "operador123"}
@@ -26,6 +26,38 @@ class OperadorRepositorio:
             fila = c.fetchone()
         return self._a_entidad(fila) if fila else None
 
+    def existe_usuario(self, usuario):
+        with _cursor() as c:
+            c.execute("SELECT 1 FROM operador WHERE usuario = %s", (usuario,))
+            return c.fetchone() is not None
+
+    def listar(self):
+        with _cursor() as c:
+            c.execute("SELECT * FROM operador ORDER BY nombre")
+            return [self._a_entidad(f) for f in c.fetchall()]
+
+    def guardar(self, nombre, usuario, contrasena_hash, rol):
+        with _cursor() as c:
+            c.execute(
+                "INSERT INTO operador (nombre, usuario, contrasena_hash, rol) VALUES (%s, %s, %s, %s)",
+                (nombre, usuario, contrasena_hash, rol.value),
+            )
+            return c.lastrowid
+
+    def actualizar(self, operador):
+        with _cursor() as c:
+            c.execute(
+                "UPDATE operador SET nombre = %s, rol = %s, activo = %s, contrasena_hash = %s "
+                "WHERE id_operador = %s",
+                (operador.nombre, operador.rol.value, operador.activo, operador.contrasena_hash,
+                 operador.id_operador),
+            )
+
+    def administradores_activos(self):
+        with _cursor() as c:
+            c.execute("SELECT COUNT(*) AS n FROM operador WHERE rol = 'ADMINISTRADOR' AND activo")
+            return c.fetchone()["n"]
+
     def inicializar_claves_pendientes(self):
         db = conexion.obtener()
         with db.cursor() as c:
@@ -44,21 +76,106 @@ class OperadorRepositorio:
                         Rol(f["rol"]), bool(f["activo"]))
 
 
+class UsuarioRepositorio:
+    """Clientes con mensualidad (iteración 2)."""
+
+    def listar(self, texto=None, solo_activos=False):
+        sql = ("SELECT u.*, (SELECT COUNT(*) FROM vehiculo v WHERE v.id_usuario = u.id_usuario AND v.activo) "
+               "AS vehiculos FROM usuario u WHERE 1 = 1")
+        params = []
+        if texto:
+            sql += " AND (u.documento LIKE %s OR u.nombre LIKE %s)"
+            params += [f"%{texto}%", f"%{texto}%"]
+        if solo_activos:
+            sql += " AND u.activo"
+        with _cursor() as c:
+            c.execute(sql + " ORDER BY u.nombre", params)
+            return c.fetchall()
+
+    def buscar_por_id(self, id_usuario):
+        with _cursor() as c:
+            c.execute("SELECT * FROM usuario WHERE id_usuario = %s", (id_usuario,))
+            f = c.fetchone()
+        return self._a_entidad(f) if f else None
+
+    def buscar_por_documento(self, documento):
+        with _cursor() as c:
+            c.execute("SELECT * FROM usuario WHERE documento = %s", (documento,))
+            f = c.fetchone()
+        return self._a_entidad(f) if f else None
+
+    def guardar(self, usuario):
+        with _cursor() as c:
+            c.execute(
+                "INSERT INTO usuario (documento, nombre, telefono, correo) VALUES (%s, %s, %s, %s)",
+                (usuario.documento, usuario.nombre, usuario.telefono, usuario.correo),
+            )
+            usuario.id_usuario = c.lastrowid
+        return usuario
+
+    def actualizar(self, usuario):
+        with _cursor() as c:
+            c.execute(
+                "UPDATE usuario SET nombre = %s, telefono = %s, correo = %s, activo = %s WHERE id_usuario = %s",
+                (usuario.nombre, usuario.telefono, usuario.correo, usuario.activo, usuario.id_usuario),
+            )
+
+    @staticmethod
+    def _a_entidad(f):
+        return Usuario(f["id_usuario"], f["documento"], f["nombre"], f["telefono"], f["correo"], bool(f["activo"]))
+
+
 class VehiculoRepositorio:
     def buscar_por_placa(self, placa):
         with _cursor() as c:
             c.execute("SELECT * FROM vehiculo WHERE placa = %s", (placa,))
             f = c.fetchone()
-        if not f:
-            return None
-        return Vehiculo(f["id_vehiculo"], f["placa"], TipoVehiculo(f["tipo"]), f["marca"],
-                        f["color"], f["id_usuario"])
+        return self._a_entidad(f) if f else None
+
+    def buscar_por_id(self, id_vehiculo):
+        with _cursor() as c:
+            c.execute("SELECT * FROM vehiculo WHERE id_vehiculo = %s", (id_vehiculo,))
+            f = c.fetchone()
+        return self._a_entidad(f) if f else None
+
+    def de_usuario(self, id_usuario):
+        """Vehículos del usuario con el fin de su última mensualidad y si está dentro del parqueadero."""
+        with _cursor() as c:
+            c.execute(
+                "SELECT v.*, (SELECT MAX(m.fecha_fin) FROM mensualidad m WHERE m.id_vehiculo = v.id_vehiculo) "
+                "AS mensualidad_hasta, EXISTS(SELECT 1 FROM registro r WHERE r.id_vehiculo = v.id_vehiculo "
+                "AND r.fecha_hora_salida IS NULL) AS dentro FROM vehiculo v WHERE v.id_usuario = %s "
+                "ORDER BY v.activo DESC, v.placa",
+                (id_usuario,),
+            )
+            return c.fetchall()
+
+    def guardar(self, vehiculo):
+        with _cursor() as c:
+            c.execute(
+                "INSERT INTO vehiculo (placa, tipo, marca, color, id_usuario) VALUES (%s, %s, %s, %s, %s)",
+                (vehiculo.placa, vehiculo.tipo.value, vehiculo.marca, vehiculo.color, vehiculo.id_usuario),
+            )
+            vehiculo.id_vehiculo = c.lastrowid
+        return vehiculo
+
+    def actualizar(self, vehiculo):
+        with _cursor() as c:
+            c.execute(
+                "UPDATE vehiculo SET marca = %s, color = %s, activo = %s WHERE id_vehiculo = %s",
+                (vehiculo.marca, vehiculo.color, vehiculo.activo, vehiculo.id_vehiculo),
+            )
 
     def nombre_propietario(self, id_usuario):
         with _cursor() as c:
             c.execute("SELECT nombre FROM usuario WHERE id_usuario = %s", (id_usuario,))
             f = c.fetchone()
         return f["nombre"] if f else ""
+
+    @staticmethod
+    def _a_entidad(f):
+        return Vehiculo(f["id_vehiculo"], f["placa"], TipoVehiculo(f["tipo"]), f["marca"],
+                        f["color"], f["id_usuario"], bool(f["activo"]))
 
 
 class MensualidadRepositorio:
@@ -73,6 +190,15 @@ class MensualidadRepositorio:
             return None
         return Mensualidad(f["id_mensualidad"], f["id_vehiculo"], f["fecha_inicio"], f["fecha_fin"],
                            f["valor"])
+
+    def guardar(self, mensualidad):
+        with _cursor() as c:
+            c.execute(
+                "INSERT INTO mensualidad (id_vehiculo, fecha_inicio, fecha_fin, valor) VALUES (%s, %s, %s, %s)",
+                (mensualidad.id_vehiculo, mensualidad.fecha_inicio, mensualidad.fecha_fin, mensualidad.valor),
+            )
+            mensualidad.id_mensualidad = c.lastrowid
+        return mensualidad
 
 
 class CeldaRepositorio:
@@ -92,23 +218,58 @@ class CeldaRepositorio:
             f = c.fetchone()
         return self._a_entidad(f) if f else None
 
+    def buscar_por_codigo(self, codigo):
+        with _cursor() as c:
+            c.execute("SELECT * FROM celda WHERE codigo = %s", (codigo,))
+            f = c.fetchone()
+        return self._a_entidad(f) if f else None
+
     def actualizar_estado(self, celda):
         with _cursor() as c:
-            c.execute("UPDATE celda SET estado = %s WHERE id_celda = %s",
-                      (celda.estado.value, celda.id_celda))
+            c.execute("UPDATE celda SET estado = %s, motivo = %s WHERE id_celda = %s",
+                      (celda.estado.value, celda.motivo, celda.id_celda))
+
+    def guardar(self, celda):
+        with _cursor() as c:
+            c.execute("INSERT INTO celda (codigo, tipo) VALUES (%s, %s)", (celda.codigo, celda.tipo.value))
+            celda.id_celda = c.lastrowid
+        return celda
+
+    def actualizar(self, celda):
+        with _cursor() as c:
+            c.execute("UPDATE celda SET codigo = %s, tipo = %s WHERE id_celda = %s",
+                      (celda.codigo, celda.tipo.value, celda.id_celda))
+
+    def mapa(self, tipo=None, estado=None):
+        """Todas las celdas con la placa del vehículo que la ocupa (si hay uno)."""
+        sql = ("SELECT c.*, v.placa, u.nombre AS propietario FROM celda c "
+               "LEFT JOIN registro r ON r.id_celda = c.id_celda AND r.fecha_hora_salida IS NULL "
+               "LEFT JOIN vehiculo v ON v.id_vehiculo = r.id_vehiculo "
+               "LEFT JOIN usuario u ON u.id_usuario = v.id_usuario WHERE 1 = 1")
+        params = []
+        if tipo:
+            sql += " AND c.tipo = %s"
+            params.append(tipo)
+        if estado:
+            sql += " AND c.estado = %s"
+            params.append(estado)
+        with _cursor() as c:
+            c.execute(sql + " ORDER BY c.tipo, c.codigo", params)
+            return c.fetchall()
 
     def resumen(self):
         with _cursor() as c:
             c.execute("SELECT tipo, estado, COUNT(*) AS total FROM celda GROUP BY tipo, estado")
             filas = c.fetchall()
-        resumen = {t.value: {"LIBRE": 0, "OCUPADA": 0} for t in TipoVehiculo}
+        resumen = {t.value: {e.value: 0 for e in EstadoCelda} for t in TipoVehiculo}
         for f in filas:
             resumen[f["tipo"]][f["estado"]] = f["total"]
         return resumen
 
     @staticmethod
     def _a_entidad(f):
-        return Celda(f["id_celda"], f["codigo"], TipoVehiculo(f["tipo"]), EstadoCelda(f["estado"]))
+        return Celda(f["id_celda"], f["codigo"], TipoVehiculo(f["tipo"]), EstadoCelda(f["estado"]),
+                     f.get("motivo"))
 
 
 class RegistroRepositorio:

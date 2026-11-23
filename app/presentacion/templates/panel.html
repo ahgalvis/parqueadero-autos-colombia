@@ -10,6 +10,7 @@
         <h2 class="h5">{{ 'Carros' if tipo == 'CARRO' else 'Motos' }}</h2>
         <p class="display-6 mb-0"><span class="text-success">{{ conteo.LIBRE }}</span> libres ·
           <span class="text-danger">{{ conteo.OCUPADA }}</span> ocupadas</p>
+        {% if conteo.INHABILITADA %}<p class="text-muted mb-0">{{ conteo.INHABILITADA }} inhabilitada(s)</p>{% endif %}
       </div>
     </div>
   </div>
@@ -17,6 +18,7 @@
 </div>
 <div class="mt-4">
   <a class="btn btn-success btn-lg me-2" href="{{ url_for('movimientos.entrada') }}">Registrar entrada</a>
-  <a class="btn btn-danger btn-lg" href="{{ url_for('movimientos.salida') }}">Registrar salida</a>
+  <a class="btn btn-danger btn-lg me-2" href="{{ url_for('movimientos.salida') }}">Registrar salida</a>
+  <a class="btn btn-outline-primary btn-lg" href="{{ url_for('celdas.mapa') }}">Ver mapa de celdas</a>
 </div>
 {% endblock %}

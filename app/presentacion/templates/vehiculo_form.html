@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block titulo %}Agregar vehículo{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-1">Agregar vehículo</h1>
+<p class="text-muted mb-3">Propietario: {{ usuario.nombre }} ({{ usuario.documento }})</p>
+<form method="post" class="card card-body" style="max-width: 760px">
+  <div class="row g-3 mb-3">
+    <div class="col-md-4">
+      <label class="form-label" for="placa">Placa *</label>
+      <input class="form-control text-uppercase" id="placa" name="placa" value="{{ datos.placa or '' }}" maxlength="7" required>
+      <div class="form-text">Carro AAA123 · Moto AAA12A</div>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label" for="tipo">Tipo *</label>
+      <select class="form-select" id="tipo" name="tipo" required>
+        <option value="">Selecciona…</option>
+        <option value="CARRO" {{ 'selected' if datos.tipo == 'CARRO' }}>Carro</option>
+        <option value="MOTO" {{ 'selected' if datos.tipo == 'MOTO' }}>Moto</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="marca">Marca</label>
+      <input class="form-control" id="marca" name="marca" value="{{ datos.marca or '' }}">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="color">Color</label>
+      <input class="form-control" id="color" name="color" value="{{ datos.color or '' }}">
+    </div>
+  </div>
+  <h2 class="h6">Mensualidad</h2>
+  {% with m=datos %}{% include "_mensualidad_campos.html" %}{% endwith %}
+  <div>
+    <button class="btn btn-primary">Guardar vehículo</button>
+    <a class="btn btn-link" href="{{ url_for('usuarios.detalle', id_usuario=usuario.id_usuario) }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

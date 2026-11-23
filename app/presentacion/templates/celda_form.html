@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Editar celda' if celda else 'Nueva celda' }}{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-3">{{ 'Editar celda ' ~ celda.codigo if celda else 'Nueva celda' }}</h1>
+<div class="row g-4">
+  <div class="col-lg-5">
+    <form method="post" class="card card-body">
+      <div class="mb-3"><label class="form-label" for="codigo">Código *</label>
+        <input class="form-control text-uppercase" id="codigo" name="codigo" value="{{ datos.codigo or '' }}" required>
+        <div class="form-text">Ejemplo: C-11 para carros, M-06 para motos.</div></div>
+      <div class="mb-3"><label class="form-label" for="tipo">Tipo *</label>
+        <select class="form-select" id="tipo" name="tipo" required>
+          <option value="">Selecciona…</option>
+          <option value="CARRO" {{ 'selected' if datos.tipo == 'CARRO' }}>Carro</option>
+          <option value="MOTO" {{ 'selected' if datos.tipo == 'MOTO' }}>Moto</option>
+        </select></div>
+      <div><button class="btn btn-primary">Guardar</button>
+        <a class="btn btn-link" href="{{ url_for('celdas.mapa') }}">Cancelar</a></div>
+    </form>
+  </div>
+  {% if celda and celda.estado.value == 'LIBRE' %}
+  <div class="col-lg-5">
+    <form method="post" action="{{ url_for('celdas.inhabilitar', id_celda=celda.id_celda) }}" class="card card-body border-danger">
+      <h2 class="h6">Inhabilitar celda</h2>
+      <p class="form-text">Una celda inhabilitada no se asigna a ningún vehículo hasta que se vuelva a habilitar.</p>
+      <div class="mb-3"><label class="form-label" for="motivo">Motivo *</label>
+        <input class="form-control" id="motivo" name="motivo" placeholder="Ej.: piso en reparación" required></div>
+      <div><button class="btn btn-outline-danger">Inhabilitar</button></div>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

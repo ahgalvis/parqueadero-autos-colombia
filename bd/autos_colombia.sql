@@ -1,6 +1,7 @@
 -- =============================================================
 -- Parqueadero "Autos Colombia" - Modelo físico (MySQL 8)
 -- Iteración 1: Gestión de entrada y salida de vehículos
+-- Iteración 2: Gestión de usuarios y gestión de celdas
 -- =============================================================
 DROP DATABASE IF EXISTS autos_colombia;
 CREATE DATABASE autos_colombia CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci;
@@ -16,13 +17,16 @@ CREATE TABLE operador (
   activo           BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- Cliente con mensualidad (CRUD completo en iteración 2)
+-- Cliente con mensualidad (RF-13 a RF-16). No se borra: se inactiva (RNF-12)
 CREATE TABLE usuario (
-  id_usuario  INT AUTO_INCREMENT PRIMARY KEY,
-  documento   VARCHAR(20)  NOT NULL UNIQUE,
-  nombre      VARCHAR(100) NOT NULL,
-  telefono    VARCHAR(20),
-  correo      VARCHAR(100)
+  id_usuario      INT AUTO_INCREMENT PRIMARY KEY,
+  documento       VARCHAR(20)  NOT NULL UNIQUE,
+  nombre          VARCHAR(100) NOT NULL,
+  telefono        VARCHAR(20),
+  correo          VARCHAR(100),
+  activo          BOOLEAN NOT NULL DEFAULT TRUE,
+  fecha_registro  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT chk_documento CHECK (documento REGEXP '^[0-9]{5,15}$')
 );
 
 CREATE TABLE vehiculo (
@@ -32,6 +36,7 @@ CREATE TABLE vehiculo (
   marca        VARCHAR(40),
   color        VARCHAR(30),
   id_usuario   INT NOT NULL,
+  activo       BOOLEAN NOT NULL DEFAULT TRUE, -- RF-18: retirar vehículo
   CONSTRAINT fk_vehiculo_usuario FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario),
   -- RNF-04: carro AAA123, moto AAA12A
   CONSTRAINT chk_placa CHECK (
@@ -40,7 +45,7 @@ CREATE TABLE vehiculo (
   )
 );
 
--- Mensualidad del vehículo (RF-03). Los pagos se detallan en iteración 3.
+-- Mensualidad del vehículo (RF-03, RF-19). Los pagos se detallan en iteración 3.
 CREATE TABLE mensualidad (
   id_mensualidad  INT AUTO_INCREMENT PRIMARY KEY,
   id_vehiculo     INT NOT NULL,
@@ -51,11 +56,13 @@ CREATE TABLE mensualidad (
   CONSTRAINT chk_fechas CHECK (fecha_fin >= fecha_inicio)
 );
 
+-- Celdas del parqueadero (RF-21 a RF-24). INHABILITADA = en mantenimiento, no se asigna
 CREATE TABLE celda (
   id_celda  INT AUTO_INCREMENT PRIMARY KEY,
   codigo    VARCHAR(10) NOT NULL UNIQUE,
   tipo      ENUM('CARRO','MOTO') NOT NULL,
-  estado    ENUM('LIBRE','OCUPADA') NOT NULL DEFAULT 'LIBRE'
+  estado    ENUM('LIBRE','OCUPADA','INHABILITADA') NOT NULL DEFAULT 'LIBRE',
+  motivo    VARCHAR(200) NULL -- por qué está inhabilitada
 );
 
 -- Cada estancia: una entrada y (cuando ocurra) su salida (RF-02, RF-06)

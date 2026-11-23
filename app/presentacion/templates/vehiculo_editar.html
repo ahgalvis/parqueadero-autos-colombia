@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block titulo %}Vehículo {{ vehiculo.placa }}{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-3">Vehículo {{ vehiculo.placa }} <small class="text-muted">({{ vehiculo.tipo.value|lower }})</small></h1>
+<div class="row g-4">
+  <div class="col-lg-5">
+    <form method="post" class="card card-body">
+      <h2 class="h6">Datos del vehículo</h2>
+      <p class="form-text">La placa y el tipo no se pueden cambiar.</p>
+      <div class="mb-3"><label class="form-label" for="marca">Marca</label>
+        <input class="form-control" id="marca" name="marca" value="{{ vehiculo.marca or '' }}"></div>
+      <div class="mb-3"><label class="form-label" for="color">Color</label>
+        <input class="form-control" id="color" name="color" value="{{ vehiculo.color or '' }}"></div>
+      <div><button class="btn btn-primary">Guardar</button></div>
+    </form>
+  </div>
+  <div class="col-lg-7">
+    <form method="post" action="{{ url_for('usuarios.mensualidad', id_vehiculo=vehiculo.id_vehiculo) }}" class="card card-body">
+      <h2 class="h6">Registrar nueva mensualidad (renovación)</h2>
+      {% with m=mensualidad %}{% include "_mensualidad_campos.html" %}{% endwith %}
+      <div><button class="btn btn-success">Registrar mensualidad</button></div>
+    </form>
+  </div>
+</div>
+<p class="mt-3"><a href="{{ url_for('usuarios.detalle', id_usuario=vehiculo.id_usuario) }}">← Volver al usuario</a></p>
+{% endblock %}

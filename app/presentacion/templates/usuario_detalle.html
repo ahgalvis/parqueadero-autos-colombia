@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block titulo %}{{ usuario.nombre }}{% endblock %}
+{% block contenido %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">{{ usuario.nombre }}
+    {% if usuario.activo %}<span class="badge bg-success fs-6">Activo</span>{% else %}<span class="badge bg-secondary fs-6">Inactivo</span>{% endif %}
+  </h1>
+  {% if operador.es_administrador() %}
+  <div>
+    <a class="btn btn-outline-primary" href="{{ url_for('usuarios.editar', id_usuario=usuario.id_usuario) }}">Editar datos</a>
+    <form method="post" action="{{ url_for('usuarios.estado', id_usuario=usuario.id_usuario) }}" class="d-inline">
+      <input type="hidden" name="activo" value="{{ '0' if usuario.activo else '1' }}">
+      <button class="btn {{ 'btn-outline-danger' if usuario.activo else 'btn-outline-success' }}">{{ 'Inactivar' if usuario.activo else 'Activar' }}</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+<div class="card mb-4"><div class="card-body">
+  <dl class="row mb-0">
+    <dt class="col-sm-3">Documento</dt><dd class="col-sm-9">{{ usuario.documento }}</dd>
+    <dt class="col-sm-3">Teléfono</dt><dd class="col-sm-9">{{ usuario.telefono or '-' }}</dd>
+    <dt class="col-sm-3">Correo</dt><dd class="col-sm-9">{{ usuario.correo or '-' }}</dd>
+  </dl>
+</div></div>
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <h2 class="h5 mb-0">Vehículos</h2>
+  {% if operador.es_administrador() and usuario.activo %}
+  <a class="btn btn-primary btn-sm" href="{{ url_for('usuarios.nuevo_vehiculo', id_usuario=usuario.id_usuario) }}">+ Agregar vehículo</a>
+  {% endif %}
+</div>
+{% if vehiculos %}
+<table class="table bg-white">
+  <thead><tr><th>Placa</th><th>Tipo</th><th>Marca / color</th><th>Mensualidad hasta</th><th>Estado</th><th></th></tr></thead>
+  <tbody>
+  {% for v in vehiculos %}
+  <tr class="{{ '' if v.activo else 'text-muted' }}">
+    <td>{{ v.placa }}</td><td>{{ v.tipo|lower }}</td><td>{{ v.marca or '' }} {{ v.color or '' }}</td>
+    <td>{% if v.mensualidad_hasta %}
+      <span class="{{ 'text-success' if v.mensualidad_hasta >= hoy else 'text-danger' }}">{{ v.mensualidad_hasta.strftime('%d/%m/%Y') }}{{ '' if v.mensualidad_hasta >= hoy else ' (vencida)' }}</span>
+      {% else %}-{% endif %}</td>
+    <td>{% if not v.activo %}Retirado{% elif v.dentro %}En el parqueadero{% else %}Activo{% endif %}</td>
+    <td>{% if operador.es_administrador() %}
+      <a href="{{ url_for('usuarios.editar_vehiculo', id_vehiculo=v.id_vehiculo) }}">Editar / mensualidad</a>
+      <form method="post" action="{{ url_for('usuarios.estado_vehiculo', id_vehiculo=v.id_vehiculo) }}" class="d-inline">
+        <input type="hidden" name="activo" value="{{ '0' if v.activo else '1' }}">
+        <button class="btn btn-link btn-sm {{ 'text-danger' if v.activo else '' }}">{{ 'Retirar' if v.activo else 'Reactivar' }}</button>
+      </form>
+    {% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="text-muted">Este usuario no tiene vehículos registrados.</p>
+{% endif %}
+<a href="{{ url_for('usuarios.lista') }}">← Volver a usuarios</a>
+{% endblock %}

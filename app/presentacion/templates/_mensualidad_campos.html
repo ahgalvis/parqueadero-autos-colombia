@@ -1,0 +1,15 @@
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <label class="form-label" for="fecha_inicio">Inicio de la mensualidad *</label>
+    <input class="form-control" id="fecha_inicio" name="fecha_inicio" type="date" value="{{ m.fecha_inicio or '' }}" required>
+  </div>
+  <div class="col-md-4">
+    <label class="form-label" for="fecha_fin">Fin de la mensualidad *</label>
+    <input class="form-control" id="fecha_fin" name="fecha_fin" type="date" value="{{ m.fecha_fin or '' }}" required>
+  </div>
+  <div class="col-md-4">
+    <label class="form-label" for="valor">Valor (pesos) *</label>
+    <input class="form-control" id="valor" name="valor" type="number" min="1" step="1" value="{{ m.valor or '' }}" required>
+  </div>
+</div>
+<p class="form-text">El cobro y los recibos de pago se gestionan en la iteración 3 (gestión de pagos).</p>

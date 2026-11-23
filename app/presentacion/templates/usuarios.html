@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titulo %}Usuarios{% endblock %}
+{% block contenido %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">Usuarios con mensualidad</h1>
+  {% if operador.es_administrador() %}
+  <a class="btn btn-primary" href="{{ url_for('usuarios.nuevo') }}">+ Registrar usuario</a>
+  {% endif %}
+</div>
+<form class="row g-2 mb-3">
+  <div class="col-auto"><input class="form-control" name="q" value="{{ q }}" placeholder="Documento o nombre"></div>
+  <div class="col-auto"><button class="btn btn-outline-primary">Buscar</button></div>
+</form>
+{% if usuarios %}
+<table class="table table-striped bg-white">
+  <thead><tr><th>Documento</th><th>Nombre</th><th>Teléfono</th><th>Vehículos</th><th>Estado</th><th></th></tr></thead>
+  <tbody>
+  {% for u in usuarios %}
+  <tr><td>{{ u.documento }}</td><td>{{ u.nombre }}</td><td>{{ u.telefono or '' }}</td><td>{{ u.vehiculos }}</td>
+      <td>{% if u.activo %}<span class="badge bg-success">Activo</span>{% else %}<span class="badge bg-secondary">Inactivo</span>{% endif %}</td>
+      <td><a href="{{ url_for('usuarios.detalle', id_usuario=u.id_usuario) }}">Ver</a></td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="text-muted">No se encontraron usuarios.</p>
+{% endif %}
+{% endblock %}
