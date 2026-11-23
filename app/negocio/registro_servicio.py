@@ -3,7 +3,8 @@ from datetime import datetime
 
 from app.datos import conexion
 from app.datos.repositorios import (
-    CeldaRepositorio, MensualidadRepositorio, NovedadRepositorio, RegistroRepositorio, VehiculoRepositorio,
+    CeldaRepositorio, MensualidadRepositorio, NovedadRepositorio, RegistroRepositorio, UsuarioRepositorio,
+    VehiculoRepositorio,
 )
 from app.modelo.entidades import formato_placa_valido
 from app.negocio.errores import ReglaNegocioError
@@ -23,6 +24,7 @@ class RegistroServicio:
         self.celdas = CeldaRepositorio()
         self.registros = RegistroRepositorio()
         self.novedades = NovedadRepositorio()
+        self.usuarios = UsuarioRepositorio()
 
     def validar_entrada(self, placa):
         """Verifica todo lo necesario antes de confirmar; devuelve los datos para mostrar."""
@@ -30,6 +32,10 @@ class RegistroServicio:
         vehiculo = self.vehiculos.buscar_por_placa(placa)
         if not vehiculo:
             raise ReglaNegocioError("Vehículo no registrado")
+        if not vehiculo.activo:
+            raise ReglaNegocioError("Vehículo retirado del sistema")
+        if not self.usuarios.buscar_por_id(vehiculo.id_usuario).activo:
+            raise ReglaNegocioError("El usuario propietario está inactivo")
         mensualidad = self._validar_mensualidad(vehiculo)
         if self.registros.abierto_de_vehiculo(vehiculo.id_vehiculo):
             raise ReglaNegocioError("El vehículo ya se encuentra en el parqueadero")

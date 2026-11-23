@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Editar cuenta' if cuenta else 'Nueva cuenta' }}{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-3">{{ 'Editar cuenta de ' ~ cuenta.usuario if cuenta else 'Nueva cuenta del personal' }}</h1>
+<form method="post" class="card card-body" style="max-width: 560px">
+  <div class="mb-3"><label class="form-label" for="nombre">Nombre *</label>
+    <input class="form-control" id="nombre" name="nombre" value="{{ datos.nombre or '' }}" required></div>
+  {% if not cuenta %}
+  <div class="mb-3"><label class="form-label" for="usuario">Usuario para iniciar sesión *</label>
+    <input class="form-control" id="usuario" name="usuario" value="{{ datos.usuario or '' }}" required></div>
+  {% endif %}
+  <div class="mb-3"><label class="form-label" for="clave">{{ 'Nueva contraseña (dejar vacío para no cambiarla)' if cuenta else 'Contraseña *' }}</label>
+    <input class="form-control" id="clave" name="clave" type="password" {{ '' if cuenta else 'required' }}></div>
+  <div class="mb-3"><label class="form-label" for="rol">Rol *</label>
+    <select class="form-select" id="rol" name="rol">
+      <option value="OPERADOR" {{ 'selected' if datos.rol == 'OPERADOR' }}>Operador</option>
+      <option value="ADMINISTRADOR" {{ 'selected' if datos.rol == 'ADMINISTRADOR' }}>Administrador</option>
+    </select></div>
+  {% if cuenta %}
+  <div class="mb-3"><label class="form-label" for="activo">Estado</label>
+    <select class="form-select" id="activo" name="activo">
+      <option value="1" {{ 'selected' if datos.activo == '1' }}>Activa</option>
+      <option value="0" {{ 'selected' if datos.activo == '0' }}>Inactiva (no puede iniciar sesión)</option>
+    </select></div>
+  {% endif %}
+  <div><button class="btn btn-primary">Guardar</button>
+    <a class="btn btn-link" href="{{ url_for('personal.lista') }}">Cancelar</a></div>
+</form>
+{% endblock %}

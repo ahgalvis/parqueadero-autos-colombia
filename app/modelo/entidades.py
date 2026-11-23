@@ -8,6 +8,11 @@ from typing import Optional
 
 from werkzeug.security import check_password_hash
 
+PATRON_DOCUMENTO = re.compile(r"^[0-9]{5,15}$")
+PATRON_CORREO = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+PATRON_TELEFONO = re.compile(r"^[0-9]{7,10}$")
+PATRON_CODIGO_CELDA = re.compile(r"^[A-Z]{1,3}-[0-9]{1,4}$")
+
 PATRON_PLACA = {
     "CARRO": re.compile(r"^[A-Z]{3}[0-9]{3}$"),
     "MOTO": re.compile(r"^[A-Z]{3}[0-9]{2}[A-Z]$"),
@@ -27,6 +32,7 @@ class TipoVehiculo(str, Enum):
 class EstadoCelda(str, Enum):
     LIBRE = "LIBRE"
     OCUPADA = "OCUPADA"
+    INHABILITADA = "INHABILITADA"
 
 
 def formato_placa_valido(placa: str) -> bool:
@@ -56,6 +62,7 @@ class Usuario:
     nombre: str
     telefono: Optional[str] = None
     correo: Optional[str] = None
+    activo: bool = True
 
 
 @dataclass
@@ -66,6 +73,7 @@ class Vehiculo:
     marca: Optional[str]
     color: Optional[str]
     id_usuario: int
+    activo: bool = True
 
     def placa_valida(self) -> bool:
         return bool(PATRON_PLACA[self.tipo.value].match(self.placa))
@@ -89,6 +97,7 @@ class Celda:
     codigo: str
     tipo: TipoVehiculo
     estado: EstadoCelda
+    motivo: Optional[str] = None
 
     def esta_libre(self) -> bool:
         return self.estado == EstadoCelda.LIBRE
@@ -98,6 +107,14 @@ class Celda:
 
     def liberar(self):
         self.estado = EstadoCelda.LIBRE
+
+    def inhabilitar(self, motivo: str):
+        self.estado = EstadoCelda.INHABILITADA
+        self.motivo = motivo
+
+    def habilitar(self):
+        self.estado = EstadoCelda.LIBRE
+        self.motivo = None
 
 
 @dataclass

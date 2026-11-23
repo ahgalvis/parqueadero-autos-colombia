@@ -16,8 +16,11 @@
       <li class="nav-item"><a class="nav-link" href="{{ url_for('movimientos.salida') }}">Salida</a></li>
       <li class="nav-item"><a class="nav-link" href="{{ url_for('consultas.vehiculos') }}">Vehículos dentro</a></li>
       <li class="nav-item"><a class="nav-link" href="{{ url_for('movimientos.novedad') }}">Novedades</a></li>
+      <li class="nav-item"><a class="nav-link" href="{{ url_for('usuarios.lista') }}">Usuarios</a></li>
+      <li class="nav-item"><a class="nav-link" href="{{ url_for('celdas.mapa') }}">Celdas</a></li>
       {% if operador.es_administrador() %}
       <li class="nav-item"><a class="nav-link" href="{{ url_for('consultas.historial') }}">Historial</a></li>
+      <li class="nav-item"><a class="nav-link" href="{{ url_for('personal.lista') }}">Personal</a></li>
       {% endif %}
     </ul>
     <span class="navbar-text me-3">{{ operador.nombre }} ({{ operador.rol.value|lower }})</span>

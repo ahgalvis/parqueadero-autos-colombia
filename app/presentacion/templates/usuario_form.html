@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Editar usuario' if usuario else 'Registrar usuario' }}{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-3">{{ 'Editar usuario' if usuario else 'Registrar usuario' }}</h1>
+<form method="post" class="card card-body" style="max-width: 640px">
+  <div class="mb-3">
+    <label class="form-label" for="documento">Documento de identidad *</label>
+    {% if usuario %}
+    <input class="form-control" id="documento" value="{{ usuario.documento }}" disabled>
+    <div class="form-text">El documento no se puede cambiar.</div>
+    {% else %}
+    <input class="form-control" id="documento" name="documento" value="{{ datos.documento or '' }}" inputmode="numeric" required>
+    {% endif %}
+  </div>
+  <div class="mb-3">
+    <label class="form-label" for="nombre">Nombre completo *</label>
+    <input class="form-control" id="nombre" name="nombre" value="{{ datos.nombre or '' }}" required>
+  </div>
+  <div class="mb-3">
+    <label class="form-label" for="telefono">Teléfono</label>
+    <input class="form-control" id="telefono" name="telefono" value="{{ datos.telefono or '' }}" inputmode="numeric">
+  </div>
+  <div class="mb-3">
+    <label class="form-label" for="correo">Correo electrónico</label>
+    <input class="form-control" id="correo" name="correo" type="email" value="{{ datos.correo or '' }}">
+  </div>
+  <div>
+    <button class="btn btn-primary">Guardar</button>
+    <a class="btn btn-link" href="{{ url_for('usuarios.detalle', id_usuario=usuario.id_usuario) if usuario else url_for('usuarios.lista') }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

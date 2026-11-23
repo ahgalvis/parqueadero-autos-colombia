@@ -4,6 +4,10 @@ Sistema de información para el parqueadero de mensualidades "Autos Colombia".
 
 **Iteración 1: gestión de entrada y salida de vehículos.** Incluye inicio de sesión, registro de entrada (con validación de placa, mensualidad vigente y asignación automática de celda), registro de salida (con liberación de celda y tiempo de permanencia), novedades, vehículos dentro del parqueadero, estado de celdas e historial de movimientos.
 
+**Iteración 2: gestión de usuarios y gestión de celdas.** Incluye registro, búsqueda, edición e inactivación de usuarios (clientes con mensualidad); registro, edición y retiro de sus vehículos con su mensualidad; cuentas del personal (operadores y administradores); y mapa de celdas con creación, modificación, inhabilitación y habilitación de celdas. Una celda inhabilitada no se asigna, y un usuario inactivo o un vehículo retirado no puede entrar.
+
+> **Si ya tenías la iteración 1 instalada:** la base de datos cambió. Vuelve a cargar `bd/autos_colombia.sql` (paso 3) para crear las columnas nuevas. Esto borra los datos de prueba anteriores y los vuelve a crear.
+
 ## Tecnologías
 
 - Python 3.10 o superior
@@ -98,6 +102,8 @@ Las pruebas recrean la base de datos `autos_colombia` desde el script, así que 
 python -m pytest
 ```
 
+`tests/test_flujo.py` cubre la iteración 1 y `tests/test_usuarios_celdas.py` cubre la iteración 2 (casos CP-01 a CP-14 del plan de pruebas).
+
 ## Trazabilidad
 
 | Historia de usuario | Ruta | Servicio |
@@ -109,3 +115,12 @@ python -m pytest
 | HU-05 Estado de celdas | `/panel` | `ConsultaServicio.resumen_celdas` |
 | HU-06 Registrar novedad | `/novedad` | `NovedadServicio` |
 | HU-07 Historial | `/historial` | `ConsultaServicio.historial` |
+| HU-08 Registrar usuario | `/usuarios/nuevo` | `UsuarioServicio.registrar` |
+| HU-09 Consultar y actualizar usuario | `/usuarios`, `/usuarios/<id>/editar` | `UsuarioServicio.listar`, `actualizar` |
+| HU-10 Inactivar o activar usuario | `/usuarios/<id>/estado` | `UsuarioServicio.cambiar_estado` |
+| HU-11 Registrar vehículo y mensualidad | `/usuarios/<id>/vehiculos/nuevo` | `UsuarioServicio.registrar_vehiculo` |
+| HU-12 Actualizar o retirar vehículo | `/vehiculos/<id>/editar`, `/vehiculos/<id>/estado`, `/vehiculos/<id>/mensualidad` | `UsuarioServicio.actualizar_vehiculo`, `cambiar_estado_vehiculo`, `renovar_mensualidad` |
+| HU-13 Gestionar cuentas del personal | `/personal` | `PersonalServicio` |
+| HU-14 Registrar y modificar celdas | `/celdas/nueva`, `/celdas/<id>/editar` | `CeldaServicio.registrar`, `modificar` |
+| HU-15 Consultar mapa de celdas | `/celdas` | `CeldaServicio.mapa` |
+| HU-16 Inhabilitar y habilitar celda | `/celdas/<id>/inhabilitar`, `/celdas/<id>/habilitar` | `CeldaServicio.inhabilitar`, `habilitar` |
