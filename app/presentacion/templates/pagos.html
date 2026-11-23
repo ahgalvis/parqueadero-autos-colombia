@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block titulo %}Pagos{% endblock %}
+{% block contenido %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">Pagos y recaudo</h1>
+  <a class="btn btn-success" href="{{ url_for('pagos.nuevo') }}">+ Registrar pago</a>
+</div>
+{% with activo='lista' %}{% include "_menu_pagos.html" %}{% endwith %}
+<form class="row g-2 mb-3">
+  <div class="col-auto"><label class="form-label small mb-0" for="desde">Desde</label><input class="form-control" type="date" id="desde" name="desde" value="{{ filtros.desde }}"></div>
+  <div class="col-auto"><label class="form-label small mb-0" for="hasta">Hasta</label><input class="form-control" type="date" id="hasta" name="hasta" value="{{ filtros.hasta }}"></div>
+  <div class="col-auto"><label class="form-label small mb-0" for="texto">Placa, documento o nombre</label><input class="form-control" id="texto" name="texto" value="{{ filtros.texto }}"></div>
+  <div class="col-auto"><label class="form-label small mb-0" for="medio">Medio</label>
+    <select class="form-select" id="medio" name="medio"><option value="">Todos</option>
+      {% for m in medios %}<option value="{{ m.value }}" {{ 'selected' if filtros.medio == m.value }}>{{ m.value|capitalize }}</option>{% endfor %}
+    </select></div>
+  <div class="col-auto align-self-end"><button class="btn btn-outline-primary">Filtrar</button></div>
+</form>
+<div class="row g-3 mb-3">
+  <div class="col-md-3"><div class="card card-body"><span class="text-muted d-block">Total recaudado</span><span class="h4 mb-0 d-block">{{ resultado.total|pesos }}</span>
+    <span class="small text-muted d-block">{{ resultado.cantidad }} pago(s){% if resultado.anulados %} · {{ resultado.anulados }} anulado(s){% endif %}</span></div></div>
+  {% for medio, total in resultado.por_medio.items() %}
+  <div class="col-md-3"><div class="card card-body"><span class="text-muted d-block">{{ medio|capitalize }}</span><span class="h5 mb-0 d-block">{{ total|pesos }}</span></div></div>
+  {% endfor %}
+</div>
+{% if resultado.pagos %}
+<table class="table table-striped bg-white">
+  <thead><tr><th>Recibo</th><th>Fecha</th><th>Placa</th><th>Usuario</th><th>Periodo</th><th>Valor</th><th>Medio</th><th>Estado</th></tr></thead>
+  <tbody>
+  {% for p in resultado.pagos %}
+  <tr class="{{ 'text-decoration-line-through text-muted' if p.estado == 'ANULADO' }}">
+    <td><a href="{{ url_for('pagos.recibo', id_pago=p.id_pago) }}">{{ p.numero_recibo }}</a></td>
+    <td>{{ p.fecha_hora.strftime('%d/%m/%Y %H:%M') }}</td><td>{{ p.placa }}</td><td>{{ p.propietario }}</td>
+    <td>{{ p.fecha_inicio.strftime('%d/%m') }} - {{ p.fecha_fin.strftime('%d/%m/%Y') }}</td>
+    <td>{{ p.valor|pesos }}</td><td>{{ p.medio_pago|capitalize }}</td>
+    <td>{% if p.estado == 'ANULADO' %}<span class="badge bg-danger">Anulado</span>{% else %}<span class="badge bg-success">Válido</span>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="text-muted">No se encontraron pagos en ese periodo.</p>
+{% endif %}
+{% endblock %}

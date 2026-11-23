@@ -29,6 +29,10 @@ def test_cp01_registrar_usuario_y_vehiculo_permite_entrada(cliente):
                      data={"placa": "ghi789", "tipo": "CARRO", "marca": "Kia", "color": "Azul", **mensualidad()},
                      follow_redirects=True)
     assert "Vehículo y mensualidad registrados" in html(r) and "GHI789" in html(r)
+    # Iteración 3: la mensualidad nueva queda pendiente; se paga antes de entrar
+    r = cliente.post("/pagos/nuevo", data={"placa": "GHI789", "mensualidad": "5", "medio": "EFECTIVO",
+                                           "valor_recibido": "180000", "accion": "pagar"}, follow_redirects=True)
+    assert "Pago registrado" in html(r)
     # El vehículo recién registrado ya puede entrar (antes daba "Vehículo no registrado")
     r = cliente.post("/entrada", data={"placa": "GHI789", "accion": "confirmar"})
     assert "Entrada registrada" in html(r)
@@ -82,6 +86,10 @@ def test_cp07_retirar_vehiculo_y_renovar_mensualidad(cliente):
     entrar(cliente, "admin", "admin123")
     r = cliente.post("/vehiculos/4/mensualidad", data=mensualidad(), follow_redirects=True)
     assert "Mensualidad registrada" in html(r)
+    # Iteración 3: la renovación queda pendiente de pago hasta que se cobra
+    r = cliente.post("/pagos/nuevo", data={"placa": "DEF456", "mensualidad": "5", "medio": "EFECTIVO",
+                                           "valor_recibido": "180000", "accion": "pagar"}, follow_redirects=True)
+    assert "Pago registrado" in html(r)
     assert "Entrada registrada" in html(cliente.post("/entrada", data={"placa": "DEF456", "accion": "confirmar"}))
     cliente.post("/salida", data={"placa": "DEF456", "accion": "confirmar"})
     r = cliente.post("/vehiculos/4/estado", data={"activo": "0"}, follow_redirects=True)

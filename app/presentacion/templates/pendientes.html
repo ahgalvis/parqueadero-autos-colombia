@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block titulo %}Pendientes de pago{% endblock %}
+{% block contenido %}
+<h1 class="h3 mb-3">Mensualidades pendientes de pago</h1>
+{% with activo='pendientes' %}{% include "_menu_pagos.html" %}{% endwith %}
+<form class="row g-2 mb-3">
+  <div class="col-auto"><input class="form-control" name="q" value="{{ q }}" placeholder="Placa, documento o nombre"></div>
+  <div class="col-auto"><button class="btn btn-outline-primary">Buscar</button></div>
+</form>
+<p><strong>Total pendiente: {{ resultado.total|pesos }}</strong> en {{ resultado.filas|length }} mensualidad(es)</p>
+{% if resultado.filas %}
+<table class="table table-striped bg-white">
+  <thead><tr><th>Placa</th><th>Usuario</th><th>Teléfono</th><th>Periodo</th><th>Valor</th><th>Estado</th><th></th></tr></thead>
+  <tbody>
+  {% for f in resultado.filas %}
+  <tr><td>{{ f.placa }}</td><td><a href="{{ url_for('usuarios.detalle', id_usuario=f.id_usuario) }}">{{ f.propietario }}</a></td>
+      <td>{{ f.telefono or '' }}</td>
+      <td>{{ f.fecha_inicio.strftime('%d/%m/%Y') }} al {{ f.fecha_fin.strftime('%d/%m/%Y') }}</td><td>{{ f.valor|pesos }}</td>
+      <td><span class="badge {{ 'bg-danger' if f.estado == 'Vencida sin pagar' else 'bg-warning text-dark' if f.estado == 'Pendiente de pago' else 'bg-secondary' }}">{{ f.estado }}</span></td>
+      <td><a class="btn btn-sm btn-success" href="{{ url_for('pagos.nuevo', placa=f.placa) }}">Cobrar</a></td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="text-muted">No hay mensualidades pendientes de pago.</p>
+{% endif %}
+{% endblock %}

@@ -4,6 +4,7 @@ from datetime import date, timedelta
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from app.negocio.errores import ReglaNegocioError
+from app.negocio.pago_servicio import PagoServicio
 from app.negocio.usuario_servicio import UsuarioServicio
 from app.presentacion.seguridad import admin_requerido, login_requerido
 
@@ -46,7 +47,8 @@ def detalle(id_usuario):
     except ReglaNegocioError as e:
         flash(str(e), "danger")
         return redirect(url_for("usuarios.lista"))
-    return render_template("usuario_detalle.html", usuario=usuario, vehiculos=vehiculos, hoy=date.today())
+    return render_template("usuario_detalle.html", usuario=usuario, vehiculos=vehiculos, hoy=date.today(),
+                           cuenta=PagoServicio().estado_cuenta(id_usuario))
 
 
 @bp.route("/usuarios/<int:id_usuario>/editar", methods=["GET", "POST"])

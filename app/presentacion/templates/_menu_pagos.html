@@ -1,0 +1,5 @@
+<ul class="nav nav-tabs mb-3 no-imprimir">
+  <li class="nav-item"><a class="nav-link {{ 'active' if activo == 'nuevo' }}" href="{{ url_for('pagos.nuevo') }}">Registrar pago</a></li>
+  <li class="nav-item"><a class="nav-link {{ 'active' if activo == 'lista' }}" href="{{ url_for('pagos.lista') }}">Pagos y recaudo</a></li>
+  <li class="nav-item"><a class="nav-link {{ 'active' if activo == 'pendientes' }}" href="{{ url_for('pagos.pendientes') }}">Pendientes de pago</a></li>
+</ul>

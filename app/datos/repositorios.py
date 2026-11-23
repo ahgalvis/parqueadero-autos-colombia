@@ -3,7 +3,8 @@ from werkzeug.security import generate_password_hash
 
 from app.datos import conexion
 from app.modelo.entidades import (
-    Celda, EstadoCelda, Mensualidad, Novedad, Operador, Registro, Rol, TipoVehiculo, Usuario, Vehiculo,
+    Celda, EstadoCelda, EstadoPago, MedioPago, Mensualidad, Novedad, Operador, Pago, Registro, Rol, TipoVehiculo,
+    Usuario, Vehiculo,
 )
 
 CLAVES_INICIALES = {"admin": "admin123", "operador": "operador123"}
@@ -178,18 +179,86 @@ class VehiculoRepositorio:
                         f["color"], f["id_usuario"], bool(f["activo"]))
 
 
+# Subconsulta que dice si una mensualidad tiene un pago válido (iteración 3)
+_PAGADA = "EXISTS(SELECT 1 FROM pago p WHERE p.id_mensualidad = m.id_mensualidad AND p.estado = 'VALIDO')"
+
+
 class MensualidadRepositorio:
     def ultima_de_vehiculo(self, id_vehiculo):
         with _cursor() as c:
             c.execute(
-                "SELECT * FROM mensualidad WHERE id_vehiculo = %s ORDER BY fecha_fin DESC LIMIT 1",
+                f"SELECT m.*, {_PAGADA} AS pagada FROM mensualidad m WHERE m.id_vehiculo = %s "
+                "ORDER BY m.fecha_fin DESC LIMIT 1",
                 (id_vehiculo,),
             )
             f = c.fetchone()
-        if not f:
-            return None
-        return Mensualidad(f["id_mensualidad"], f["id_vehiculo"], f["fecha_inicio"], f["fecha_fin"],
-                           f["valor"])
+        return self._a_entidad(f) if f else None
+
+    def buscar_por_id(self, id_mensualidad):
+        with _cursor() as c:
+            c.execute(f"SELECT m.*, {_PAGADA} AS pagada FROM mensualidad m WHERE m.id_mensualidad = %s",
+                      (id_mensualidad,))
+            f = c.fetchone()
+        return self._a_entidad(f) if f else None
+
+    def vigente_de_vehiculo(self, id_vehiculo, fecha):
+        """La mensualidad que cubre la fecha; si hay varias, prefiere la que está pagada."""
+        with _cursor() as c:
+            c.execute(
+                f"SELECT m.*, {_PAGADA} AS pagada FROM mensualidad m WHERE m.id_vehiculo = %s "
+                "AND m.fecha_inicio <= %s AND m.fecha_fin >= %s ORDER BY pagada DESC, m.fecha_fin DESC LIMIT 1",
+                (id_vehiculo, fecha, fecha),
+            )
+            f = c.fetchone()
+        return self._a_entidad(f) if f else None
+
+    def ultima_vencida_de_vehiculo(self, id_vehiculo, fecha):
+        with _cursor() as c:
+            c.execute(
+                f"SELECT m.*, {_PAGADA} AS pagada FROM mensualidad m WHERE m.id_vehiculo = %s "
+                "AND m.fecha_fin < %s ORDER BY m.fecha_fin DESC LIMIT 1",
+                (id_vehiculo, fecha),
+            )
+            f = c.fetchone()
+        return self._a_entidad(f) if f else None
+
+    def pendientes_de_vehiculo(self, id_vehiculo):
+        """Mensualidades sin pago válido, de la más antigua a la más nueva."""
+        with _cursor() as c:
+            c.execute(
+                f"SELECT m.*, {_PAGADA} AS pagada FROM mensualidad m WHERE m.id_vehiculo = %s "
+                f"AND NOT {_PAGADA} ORDER BY m.fecha_inicio",
+                (id_vehiculo,),
+            )
+            return [self._a_entidad(f) for f in c.fetchall()]
+
+    def pendientes(self, texto=None):
+        """Cartera: mensualidades sin pagar de vehículos y usuarios activos (RF-29)."""
+        sql = (
+            f"SELECT m.*, {_PAGADA} AS pagada, v.placa, v.tipo, u.id_usuario, u.documento, u.nombre AS propietario, "
+            "u.telefono FROM mensualidad m JOIN vehiculo v ON v.id_vehiculo = m.id_vehiculo "
+            f"JOIN usuario u ON u.id_usuario = v.id_usuario WHERE v.activo AND u.activo AND NOT {_PAGADA}"
+        )
+        params = []
+        if texto:
+            sql += " AND (v.placa LIKE %s OR u.documento LIKE %s OR u.nombre LIKE %s)"
+            params += [f"%{texto}%"] * 3
+        with _cursor() as c:
+            c.execute(sql + " ORDER BY m.fecha_inicio, v.placa", params)
+            return c.fetchall()
+
+    def estado_cuenta_usuario(self, id_usuario):
+        """Todas las mensualidades de los vehículos del usuario con su pago válido, si lo tiene (RF-31)."""
+        with _cursor() as c:
+            c.execute(
+                "SELECT m.*, v.placa, p.id_pago, p.fecha_hora AS fecha_pago, p.medio_pago, "
+                "(p.id_pago IS NOT NULL) AS pagada FROM mensualidad m "
+                "JOIN vehiculo v ON v.id_vehiculo = m.id_vehiculo "
+                "LEFT JOIN pago p ON p.id_mensualidad = m.id_mensualidad AND p.estado = 'VALIDO' "
+                "WHERE v.id_usuario = %s ORDER BY m.fecha_inicio DESC, v.placa",
+                (id_usuario,),
+            )
+            return c.fetchall()
 
     def guardar(self, mensualidad):
         with _cursor() as c:
@@ -199,6 +268,81 @@ class MensualidadRepositorio:
             )
             mensualidad.id_mensualidad = c.lastrowid
         return mensualidad
+
+    @staticmethod
+    def _a_entidad(f):
+        return Mensualidad(f["id_mensualidad"], f["id_vehiculo"], f["fecha_inicio"], f["fecha_fin"], f["valor"],
+                           bool(f.get("pagada")))
+
+
+class PagoRepositorio:
+    """Pagos de mensualidades (iteración 3). Nunca se borran: se anulan."""
+
+    _DETALLE = (
+        "SELECT p.*, m.fecha_inicio, m.fecha_fin, v.placa, v.tipo, u.id_usuario, u.documento, "
+        "u.nombre AS propietario, o.nombre AS operador, oa.nombre AS operador_anulacion "
+        "FROM pago p JOIN mensualidad m ON m.id_mensualidad = p.id_mensualidad "
+        "JOIN vehiculo v ON v.id_vehiculo = m.id_vehiculo JOIN usuario u ON u.id_usuario = v.id_usuario "
+        "JOIN operador o ON o.id_operador = p.id_operador "
+        "LEFT JOIN operador oa ON oa.id_operador = p.id_operador_anulacion"
+    )
+
+    def guardar(self, pago):
+        with _cursor() as c:
+            c.execute(
+                "INSERT INTO pago (id_mensualidad, fecha_hora, valor, medio_pago, referencia, valor_recibido, "
+                "id_operador) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                (pago.id_mensualidad, pago.fecha_hora, pago.valor, pago.medio_pago.value, pago.referencia,
+                 pago.valor_recibido, pago.id_operador),
+            )
+            pago.id_pago = c.lastrowid
+        return pago
+
+    def buscar_por_id(self, id_pago):
+        with _cursor() as c:
+            c.execute("SELECT * FROM pago WHERE id_pago = %s", (id_pago,))
+            f = c.fetchone()
+        return self._a_entidad(f) if f else None
+
+    def detalle(self, id_pago):
+        """Datos completos para el recibo."""
+        with _cursor() as c:
+            c.execute(self._DETALLE + " WHERE p.id_pago = %s", (id_pago,))
+            return c.fetchone()
+
+    def anular(self, pago, id_operador, momento):
+        with _cursor() as c:
+            c.execute(
+                "UPDATE pago SET estado = %s, motivo_anulacion = %s, fecha_hora_anulacion = %s, "
+                "id_operador_anulacion = %s WHERE id_pago = %s AND estado = 'VALIDO'",
+                (pago.estado.value, pago.motivo_anulacion, momento, id_operador, pago.id_pago),
+            )
+            return c.rowcount
+
+    def listar(self, desde=None, hasta=None, texto=None, medio=None):
+        sql = self._DETALLE + " WHERE 1 = 1"
+        params = []
+        if desde:
+            sql += " AND DATE(p.fecha_hora) >= %s"
+            params.append(desde)
+        if hasta:
+            sql += " AND DATE(p.fecha_hora) <= %s"
+            params.append(hasta)
+        if texto:
+            sql += " AND (v.placa LIKE %s OR u.documento LIKE %s OR u.nombre LIKE %s)"
+            params += [f"%{texto}%"] * 3
+        if medio:
+            sql += " AND p.medio_pago = %s"
+            params.append(medio)
+        with _cursor() as c:
+            c.execute(sql + " ORDER BY p.fecha_hora DESC, p.id_pago DESC", params)
+            return c.fetchall()
+
+    @staticmethod
+    def _a_entidad(f):
+        return Pago(f["id_pago"], f["id_mensualidad"], f["fecha_hora"], f["valor"], MedioPago(f["medio_pago"]),
+                    f["referencia"], f["valor_recibido"], f["id_operador"], EstadoPago(f["estado"]),
+                    f["motivo_anulacion"])
 
 
 class CeldaRepositorio:

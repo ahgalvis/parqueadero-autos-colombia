@@ -10,7 +10,7 @@
       <dt class="col-sm-3">Placa</dt><dd class="col-sm-9">{{ datos.vehiculo.placa }} ({{ datos.vehiculo.tipo.value|lower }})</dd>
       <dt class="col-sm-3">Vehículo</dt><dd class="col-sm-9">{{ datos.vehiculo.marca }} {{ datos.vehiculo.color }}</dd>
       <dt class="col-sm-3">Propietario</dt><dd class="col-sm-9">{{ datos.propietario }}</dd>
-      <dt class="col-sm-3">Mensualidad</dt><dd class="col-sm-9 text-success">Vigente hasta {{ datos.mensualidad.fecha_fin.strftime('%d/%m/%Y') }}</dd>
+      <dt class="col-sm-3">Mensualidad</dt><dd class="col-sm-9 text-success">Vigente hasta {{ datos.mensualidad.fecha_fin.strftime('%d/%m/%Y') }} · pagada</dd>
       <dt class="col-sm-3">Celdas libres</dt><dd class="col-sm-9">{{ datos.celdas_libres }}</dd>
     </dl>
     <form method="post">
