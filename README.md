@@ -6,7 +6,9 @@ Sistema de información para el parqueadero de mensualidades "Autos Colombia".
 
 **Iteración 2: gestión de usuarios y gestión de celdas.** Incluye registro, búsqueda, edición e inactivación de usuarios (clientes con mensualidad); registro, edición y retiro de sus vehículos con su mensualidad; cuentas del personal (operadores y administradores); y mapa de celdas con creación, modificación, inhabilitación y habilitación de celdas. Una celda inhabilitada no se asigna, y un usuario inactivo o un vehículo retirado no puede entrar.
 
-> **Si ya tenías la iteración 1 instalada:** la base de datos cambió. Vuelve a cargar `bd/autos_colombia.sql` (paso 3) para crear las columnas nuevas. Esto borra los datos de prueba anteriores y los vuelve a crear.
+**Iteración 3: gestión de pagos.** Incluye registrar el pago de una mensualidad (efectivo con cálculo del cambio, tarjeta o transferencia con número de aprobación), cobrar la siguiente mensualidad, recibo con número consecutivo (RC-000001) para imprimir, consulta de pagos con el total recaudado por medio de pago, mensualidades pendientes de pago, estado de cuenta del usuario y anulación de pagos por el administrador (con motivo; el pago no se borra). Desde esta iteración un vehículo solo puede entrar si su mensualidad vigente está **pagada**.
+
+> **Si ya tenías una iteración anterior instalada:** la base de datos cambió (la iteración 3 agrega la tabla `pago`). Vuelve a cargar `bd/autos_colombia.sql` (paso 3) para crear las columnas nuevas. Esto borra los datos de prueba anteriores y los vuelve a crear.
 
 ## Tecnologías
 
@@ -92,7 +94,7 @@ python run.py
 | admin | admin123 | Administrador |
 | operador | operador123 | Operador |
 
-Placas de prueba: `ABC123`, `XYZ789` (carros vigentes), `MOT45A` (moto vigente), `DEF456` (mensualidad vencida).
+Placas de prueba: `ABC123` (carro, mensualidad vigente y pagada), `XYZ789` (carro, mensualidad vigente **sin pagar**: no puede entrar hasta registrar el pago), `MOT45A` (moto, vigente y pagada), `DEF456` (mensualidad vencida).
 
 ## Pruebas
 
@@ -102,7 +104,7 @@ Las pruebas recrean la base de datos `autos_colombia` desde el script, así que 
 python -m pytest
 ```
 
-`tests/test_flujo.py` cubre la iteración 1 y `tests/test_usuarios_celdas.py` cubre la iteración 2 (casos CP-01 a CP-14 del plan de pruebas).
+`tests/test_flujo.py` cubre la iteración 1, `tests/test_usuarios_celdas.py` la iteración 2 (casos CP-01 a CP-14) y `tests/test_pagos.py` la iteración 3 (casos CP-15 a CP-26). En total son 35 pruebas.
 
 ## Trazabilidad
 
@@ -124,3 +126,10 @@ python -m pytest
 | HU-14 Registrar y modificar celdas | `/celdas/nueva`, `/celdas/<id>/editar` | `CeldaServicio.registrar`, `modificar` |
 | HU-15 Consultar mapa de celdas | `/celdas` | `CeldaServicio.mapa` |
 | HU-16 Inhabilitar y habilitar celda | `/celdas/<id>/inhabilitar`, `/celdas/<id>/habilitar` | `CeldaServicio.inhabilitar`, `habilitar` |
+| HU-17 Registrar pago de mensualidad | `/pagos/nuevo` | `PagoServicio.cuenta_de_placa`, `registrar_pago` |
+| HU-18 Cobrar la siguiente mensualidad | `/pagos/nuevo` (opción “siguiente”) | `PagoServicio.siguiente_mensualidad` |
+| HU-19 Consultar e imprimir recibo | `/pagos/<id>` | `PagoServicio.recibo` |
+| HU-20 Consultar pagos y recaudo | `/pagos` | `PagoServicio.listar` |
+| HU-21 Pendientes de pago y estado de cuenta | `/pagos/pendientes`, `/usuarios/<id>` | `PagoServicio.pendientes`, `estado_cuenta` |
+| HU-22 Anular pago | `/pagos/<id>/anular` | `PagoServicio.anular` |
+| HU-23 Validar pago en la entrada | `/entrada` | `RegistroServicio.validar_entrada` |

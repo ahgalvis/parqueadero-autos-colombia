@@ -53,5 +53,22 @@
 {% else %}
 <p class="text-muted">Este usuario no tiene vehículos registrados.</p>
 {% endif %}
+<h2 class="h5 mt-4 mb-2">Estado de cuenta (pagos de mensualidades)</h2>
+{% if cuenta %}
+<table class="table table-sm bg-white">
+  <thead><tr><th>Placa</th><th>Periodo</th><th>Valor</th><th>Estado</th><th>Recibo</th></tr></thead>
+  <tbody>
+  {% for m in cuenta %}
+  <tr><td>{{ m.placa }}</td><td>{{ m.fecha_inicio.strftime('%d/%m/%Y') }} al {{ m.fecha_fin.strftime('%d/%m/%Y') }}</td>
+      <td>{{ m.valor|pesos }}</td>
+      <td><span class="{{ 'text-success' if m.pagada else 'text-danger' }}">{{ m.estado }}</span></td>
+      <td>{% if m.id_pago %}<a href="{{ url_for('pagos.recibo', id_pago=m.id_pago) }}">{{ m.numero_recibo }}</a> · {{ m.medio_pago|capitalize }}
+          {% elif usuario.activo %}<a class="btn btn-sm btn-success" href="{{ url_for('pagos.nuevo', placa=m.placa) }}">Cobrar</a>{% endif %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="text-muted">Sin mensualidades registradas.</p>
+{% endif %}
 <a href="{{ url_for('usuarios.lista') }}">← Volver a usuarios</a>
 {% endblock %}

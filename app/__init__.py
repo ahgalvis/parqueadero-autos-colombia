@@ -16,6 +16,7 @@ def create_app(config=Config):
     from app.presentacion.rutas_usuarios import bp as usuarios_bp
     from app.presentacion.rutas_celdas import bp as celdas_bp
     from app.presentacion.rutas_personal import bp as personal_bp
+    from app.presentacion.rutas_pagos import bp as pagos_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(movimientos_bp)
@@ -23,6 +24,10 @@ def create_app(config=Config):
     app.register_blueprint(usuarios_bp)
     app.register_blueprint(celdas_bp)
     app.register_blueprint(personal_bp)
+    app.register_blueprint(pagos_bp)
+
+    # $180.000: pesos colombianos sin decimales y con punto de miles (RNF-20)
+    app.add_template_filter(lambda v: "$" + f"{int(v or 0):,}".replace(",", "."), "pesos")
 
     from app.presentacion.seguridad import operador_actual
     app.context_processor(lambda: {"operador": operador_actual()})

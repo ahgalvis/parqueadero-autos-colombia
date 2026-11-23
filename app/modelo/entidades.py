@@ -29,6 +29,17 @@ class TipoVehiculo(str, Enum):
     MOTO = "MOTO"
 
 
+class MedioPago(str, Enum):
+    EFECTIVO = "EFECTIVO"
+    TARJETA = "TARJETA"
+    TRANSFERENCIA = "TRANSFERENCIA"
+
+
+class EstadoPago(str, Enum):
+    VALIDO = "VALIDO"
+    ANULADO = "ANULADO"
+
+
 class EstadoCelda(str, Enum):
     LIBRE = "LIBRE"
     OCUPADA = "OCUPADA"
@@ -86,9 +97,20 @@ class Mensualidad:
     fecha_inicio: date
     fecha_fin: date
     valor: Decimal
+    pagada: bool = False  # iteración 3: tiene un pago válido
 
     def esta_vigente(self, fecha: date) -> bool:
         return self.fecha_inicio <= fecha <= self.fecha_fin
+
+    def estado_pago(self, hoy: date) -> str:
+        """Texto que se muestra en el estado de cuenta y en los pendientes."""
+        if self.pagada:
+            return "Pagada"
+        if self.fecha_fin < hoy:
+            return "Vencida sin pagar"
+        if self.fecha_inicio > hoy:
+            return "Por iniciar"
+        return "Pendiente de pago"
 
 
 @dataclass
@@ -146,3 +168,39 @@ class Novedad:
     descripcion: str
     fecha_hora: datetime
     id_operador: int
+
+
+@dataclass
+class Pago:
+    """Pago de una mensualidad (iteración 3). No se borra: se anula (RNF-19)."""
+    id_pago: Optional[int]
+    id_mensualidad: int
+    fecha_hora: datetime
+    valor: Decimal
+    medio_pago: MedioPago
+    referencia: Optional[str]
+    valor_recibido: Optional[Decimal]
+    id_operador: int
+    estado: EstadoPago = EstadoPago.VALIDO
+    motivo_anulacion: Optional[str] = None
+
+    @property
+    def numero_recibo(self) -> str:
+        return numero_recibo(self.id_pago)
+
+    def cambio(self) -> Decimal:
+        if self.medio_pago != MedioPago.EFECTIVO or self.valor_recibido is None:
+            return Decimal(0)
+        return self.valor_recibido - self.valor
+
+    def esta_anulado(self) -> bool:
+        return self.estado == EstadoPago.ANULADO
+
+    def anular(self, motivo: str):
+        self.estado = EstadoPago.ANULADO
+        self.motivo_anulacion = motivo
+
+
+def numero_recibo(id_pago) -> str:
+    """Consecutivo del recibo: RC-000001, RC-000002..."""
+    return f"RC-{int(id_pago):06d}"

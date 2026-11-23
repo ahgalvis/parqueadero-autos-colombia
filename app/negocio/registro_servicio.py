@@ -93,10 +93,15 @@ class RegistroServicio:
         return self._comprobante(registro, vehiculo, celda, self.vehiculos.nombre_propietario(vehiculo.id_usuario))
 
     def _validar_mensualidad(self, vehiculo):
-        mensualidad = self.mensualidades.ultima_de_vehiculo(vehiculo.id_vehiculo)
-        if not mensualidad or not mensualidad.esta_vigente(datetime.now().date()):
-            vence = f" (venció el {mensualidad.fecha_fin:%d/%m/%Y})" if mensualidad else ""
+        """Iteración 3: además de vigente, la mensualidad debe estar pagada (RF-03 actualizado)."""
+        hoy = datetime.now().date()
+        mensualidad = self.mensualidades.vigente_de_vehiculo(vehiculo.id_vehiculo, hoy)
+        if not mensualidad:
+            anterior = self.mensualidades.ultima_vencida_de_vehiculo(vehiculo.id_vehiculo, hoy)
+            vence = f" (venció el {anterior.fecha_fin:%d/%m/%Y})" if anterior else ""
             raise ReglaNegocioError("Mensualidad vencida" + vence)
+        if not mensualidad.pagada:
+            raise ReglaNegocioError("La mensualidad está pendiente de pago. Regístrala en el menú Pagos")
         return mensualidad
 
     def _asignar_celda(self, tipo):

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block titulo %}Recibo {{ r.numero_recibo }}{% endblock %}
+{% block contenido %}
+<div class="card mx-auto mb-3 {{ 'border-danger' if r.estado == 'ANULADO' else 'border-success' }}" style="max-width: 640px">
+  <div class="card-body">
+    <div class="d-flex justify-content-between">
+      <div><h1 class="h4 mb-0">Parqueadero Autos Colombia</h1><p class="text-muted mb-0">Recibo de pago de mensualidad</p></div>
+      <div class="text-end"><p class="h5 mb-0">{{ r.numero_recibo }}</p><p class="mb-0">{{ r.fecha_hora.strftime('%d/%m/%Y %H:%M') }}</p></div>
+    </div>
+    {% if r.estado == 'ANULADO' %}
+    <div class="alert alert-danger mt-3 mb-0"><strong>RECIBO ANULADO</strong> el {{ r.fecha_hora_anulacion.strftime('%d/%m/%Y %H:%M') }}
+      por {{ r.operador_anulacion }}. Motivo: {{ r.motivo_anulacion }}</div>
+    {% endif %}
+    <hr>
+    <dl class="row mb-0">
+      <dt class="col-5">Usuario</dt><dd class="col-7">{{ r.propietario }} · CC {{ r.documento }}</dd>
+      <dt class="col-5">Vehículo</dt><dd class="col-7">{{ r.placa }} ({{ r.tipo|lower }})</dd>
+      <dt class="col-5">Periodo pagado</dt><dd class="col-7">{{ r.fecha_inicio.strftime('%d/%m/%Y') }} al {{ r.fecha_fin.strftime('%d/%m/%Y') }}</dd>
+      <dt class="col-5">Medio de pago</dt><dd class="col-7">{{ r.medio_pago|capitalize }}{% if r.referencia %} · aprobación {{ r.referencia }}{% endif %}</dd>
+      {% if r.valor_recibido is not none %}
+      <dt class="col-5">Valor recibido</dt><dd class="col-7">{{ r.valor_recibido|pesos }}</dd>
+      <dt class="col-5">Cambio</dt><dd class="col-7">{{ r.cambio|pesos }}</dd>
+      {% endif %}
+      <dt class="col-5">Recibió</dt><dd class="col-7">{{ r.operador }}</dd>
+      <dt class="col-5 h4">Total pagado</dt><dd class="col-7 h4">{{ r.valor|pesos }}</dd>
+    </dl>
+  </div>
+</div>
+<div class="text-center no-imprimir">
+  <button class="btn btn-primary" onclick="window.print()">Imprimir recibo</button>
+  <a class="btn btn-outline-secondary" href="{{ url_for('usuarios.detalle', id_usuario=r.id_usuario) }}">Ver estado de cuenta</a>
+  {% if operador.es_administrador() and r.estado == 'VALIDO' %}
+  <a class="btn btn-outline-danger" href="{{ url_for('pagos.anular', id_pago=r.id_pago) }}">Anular pago</a>
+  {% endif %}
+  <p class="mt-3"><a href="{{ url_for('pagos.lista') }}">← Volver a pagos</a></p>
+</div>
+{% endblock %}

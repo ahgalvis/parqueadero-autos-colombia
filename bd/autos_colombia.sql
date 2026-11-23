@@ -2,6 +2,7 @@
 -- Parqueadero "Autos Colombia" - Modelo físico (MySQL 8)
 -- Iteración 1: Gestión de entrada y salida de vehículos
 -- Iteración 2: Gestión de usuarios y gestión de celdas
+-- Iteración 3: Gestión de pagos
 -- =============================================================
 DROP DATABASE IF EXISTS autos_colombia;
 CREATE DATABASE autos_colombia CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci;
@@ -45,7 +46,7 @@ CREATE TABLE vehiculo (
   )
 );
 
--- Mensualidad del vehículo (RF-03, RF-19). Los pagos se detallan en iteración 3.
+-- Mensualidad del vehículo (RF-03, RF-19). Se paga con un registro en la tabla pago (iteración 3).
 CREATE TABLE mensualidad (
   id_mensualidad  INT AUTO_INCREMENT PRIMARY KEY,
   id_vehiculo     INT NOT NULL,
@@ -97,7 +98,33 @@ CREATE TABLE novedad (
   CONSTRAINT fk_novedad_operador FOREIGN KEY (id_operador) REFERENCES operador(id_operador)
 );
 
+-- Pagos de mensualidades (RF-25 a RF-31). No se borran: se anulan con motivo (RNF-19)
+CREATE TABLE pago (
+  id_pago                INT AUTO_INCREMENT PRIMARY KEY,       -- número de recibo: RC-000001
+  id_mensualidad         INT NOT NULL,
+  fecha_hora             DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  valor                  DECIMAL(10,2) NOT NULL,
+  medio_pago             ENUM('EFECTIVO','TARJETA','TRANSFERENCIA') NOT NULL,
+  referencia             VARCHAR(40) NULL,     -- n.º de aprobación del datáfono o de la transferencia
+  valor_recibido         DECIMAL(10,2) NULL,   -- solo efectivo, para calcular el cambio
+  id_operador            INT NOT NULL,
+  estado                 ENUM('VALIDO','ANULADO') NOT NULL DEFAULT 'VALIDO',
+  motivo_anulacion       VARCHAR(200) NULL,
+  fecha_hora_anulacion   DATETIME NULL,
+  id_operador_anulacion  INT NULL,
+  -- Columna auxiliar: solo tiene valor mientras el pago es válido
+  mensualidad_pagada INT GENERATED ALWAYS AS (IF(estado = 'VALIDO', id_mensualidad, NULL)) STORED,
+  CONSTRAINT fk_pago_mensualidad FOREIGN KEY (id_mensualidad) REFERENCES mensualidad(id_mensualidad),
+  CONSTRAINT fk_pago_operador    FOREIGN KEY (id_operador) REFERENCES operador(id_operador),
+  CONSTRAINT fk_pago_op_anula    FOREIGN KEY (id_operador_anulacion) REFERENCES operador(id_operador),
+  CONSTRAINT uq_mensualidad_pagada UNIQUE (mensualidad_pagada), -- RNF-18: un solo pago válido por mensualidad
+  CONSTRAINT chk_pago_valor CHECK (valor > 0),
+  CONSTRAINT chk_pago_recibido CHECK (valor_recibido IS NULL OR valor_recibido >= valor),
+  CONSTRAINT chk_pago_anulado CHECK (estado = 'VALIDO' OR motivo_anulacion IS NOT NULL)
+);
+
 CREATE INDEX idx_registro_entrada ON registro (fecha_hora_entrada);
+CREATE INDEX idx_pago_fecha ON pago (fecha_hora);
 
 -- =============================================================
 -- Datos de prueba
@@ -120,6 +147,7 @@ INSERT INTO vehiculo (placa, tipo, marca, color, id_usuario) VALUES
  ('DEF456', 'CARRO', 'Renault',   'Blanco', 3);
 
 -- DEF456 tiene la mensualidad vencida para probar HU-02 criterio 3
+-- XYZ789 tiene la mensualidad vigente pero SIN PAGAR (iteración 3)
 INSERT INTO mensualidad (id_vehiculo, fecha_inicio, fecha_fin, valor) VALUES
  (1, CURDATE() - INTERVAL 10 DAY, CURDATE() + INTERVAL 20 DAY, 180000),
  (2, CURDATE() - INTERVAL 5 DAY,  CURDATE() + INTERVAL 25 DAY, 180000),
@@ -130,3 +158,9 @@ INSERT INTO celda (codigo, tipo) VALUES
  ('C-01','CARRO'),('C-02','CARRO'),('C-03','CARRO'),('C-04','CARRO'),('C-05','CARRO'),
  ('C-06','CARRO'),('C-07','CARRO'),('C-08','CARRO'),('C-09','CARRO'),('C-10','CARRO'),
  ('M-01','MOTO'),('M-02','MOTO'),('M-03','MOTO'),('M-04','MOTO'),('M-05','MOTO');
+
+-- Pagos de prueba (iteración 3). La mensualidad 2 (XYZ789) queda pendiente de pago
+INSERT INTO pago (id_mensualidad, fecha_hora, valor, medio_pago, referencia, valor_recibido, id_operador) VALUES
+ (1, NOW() - INTERVAL 10 DAY, 180000, 'EFECTIVO',      NULL,       200000, 2),
+ (3, NOW() - INTERVAL 3 DAY,   90000, 'TRANSFERENCIA', 'NEQ48213',   NULL, 2),
+ (4, NOW() - INTERVAL 40 DAY, 180000, 'TARJETA',       'APR5521',    NULL, 1);
